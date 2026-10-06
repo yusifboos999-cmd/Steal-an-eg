@@ -1,5 +1,5 @@
 -- // ===================================================== //
--- //   Steal An Egg - Main Menu & Auto Low Server Hopper   //
+-- //   Steal An Egg - Main Menu & 5 Server Browser          //
 -- // ===================================================== //
 
 local HttpService = game:GetService("HttpService")
@@ -7,36 +7,35 @@ local TeleportService = game:GetService("TeleportService")
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
+local Workspace = game:GetService("Workspace")
 
 -- رابط السكربت الخاص بك
 local RAW_SCRIPT_URL = "https://raw.githubusercontent.com/yusifboos999-cmd/Steal-an-eg/refs/heads/main/main.lua" 
 
--- التعرف على كافة دوال queue_on_teleport للمحققات المختلفة
+-- التعرف على كافة دوال queue_on_teleport للمحققات
 local queuer = queue_on_teleport or (syn and syn.queue_on_teleport) or queueonteleport or (fluxus and fluxus.queue_on_teleport) or (getgenv and getgenv().queue_on_teleport)
 
--- دالة تجهيز السكربت للعمل بالسيرفر القادم بعد اكتمال التحميل
 local function prepareAutoExecute()
     if queuer then
         pcall(function()
             queuer([=[
                 repeat task.wait() until game:IsLoaded()
-                task.wait(1.5)
+                task.wait(1)
                 loadstring(game:HttpGet("https://raw.githubusercontent.com/yusifboos999-cmd/Steal-an-eg/refs/heads/main/main.lua"))()
             ]=])
         end)
     end
 end
 
--- ربط التجهيز بحدث الانتقال التلقائي للعبة لضمان عدم ضياع الأمر
 pcall(function()
     LocalPlayer.OnTeleport:Connect(function(State)
         prepareAutoExecute()
     end)
 end)
 
--- 2. إنشاء واجهة المستخدم (GUI)
+-- 1. إنشاء واجهة المستخدم (GUI)
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "StealAnEgg_ServerHopper"
+ScreenGui.Name = "StealAnEgg_ServerBrowser"
 ScreenGui.ResetOnSpawn = false
 
 if syn and syn.protect_gui then
@@ -46,7 +45,7 @@ else
     ScreenGui.Parent = LocalPlayer:FindFirstChildOfClass("PlayerGui") or CoreGui
 end
 
--- زر فتح/إغلاق القائمة (مخصص للجوال)
+-- زر فتح/إغلاق القائمة
 local ToggleBtn = Instance.new("TextButton")
 ToggleBtn.Size = UDim2.new(0, 50, 0, 50)
 ToggleBtn.Position = UDim2.new(0.02, 0, 0.4, 0)
@@ -57,27 +56,25 @@ ToggleBtn.Font = Enum.Font.SourceSansBold
 ToggleBtn.TextSize = 16
 ToggleBtn.Parent = ScreenGui
 
-local UICornerBtn = Instance.new("UICorner", ToggleBtn)
-UICornerBtn.CornerRadius = UDim.new(0, 10)
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0, 10)
 
 -- الإطار الرئيسي للقائمة
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 280, 0, 180)
-MainFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
+MainFrame.Size = UDim2.new(0, 310, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -155, 0.5, -180)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
-local UICornerMain = Instance.new("UICorner", MainFrame)
-UICornerMain.CornerRadius = UDim.new(0, 12)
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 12)
 
 -- العنوان
 local Title = Instance.new("TextLabel")
-Title.Size = UDim2.new(1, 0, 0, 40)
+Title.Size = UDim2.new(1, 0, 0, 35)
 Title.BackgroundTransparency = 1
-Title.Text = "Steal An Egg - Main Menu"
+Title.Text = "Steal An Egg - Server List"
 Title.TextColor3 = Color3.fromRGB(255, 215, 0)
 Title.Font = Enum.Font.SourceSansBold
 Title.TextSize = 18
@@ -85,42 +82,61 @@ Title.Parent = MainFrame
 
 -- نص إظهار الحالة
 local StatusLabel = Instance.new("TextLabel")
-StatusLabel.Size = UDim2.new(1, -20, 0, 30)
-StatusLabel.Position = UDim2.new(0, 10, 0, 45)
+StatusLabel.Size = UDim2.new(1, -20, 0, 25)
+StatusLabel.Position = UDim2.new(0, 10, 0, 35)
 StatusLabel.BackgroundTransparency = 1
 StatusLabel.Text = "الحالة: جاهز"
 StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
 StatusLabel.Font = Enum.Font.SourceSans
-StatusLabel.TextSize = 14
+StatusLabel.TextSize = 13
 StatusLabel.Parent = MainFrame
 
--- زر Change Server
-local ChangeServerBtn = Instance.new("TextButton")
-ChangeServerBtn.Size = UDim2.new(0.85, 0, 0, 45)
-ChangeServerBtn.Position = UDim2.new(0.075, 0, 0.6, 0)
-ChangeServerBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-ChangeServerBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-ChangeServerBtn.Text = "Change Server (<= 3 Players)"
-ChangeServerBtn.Font = Enum.Font.SourceSansBold
-ChangeServerBtn.TextSize = 16
-ChangeServerBtn.Parent = MainFrame
+-- زر تحديث/جلب 5 سيرفرات
+local RefreshBtn = Instance.new("TextButton")
+RefreshBtn.Size = UDim2.new(0.9, 0, 0, 32)
+RefreshBtn.Position = UDim2.new(0.05, 0, 0.17, 0)
+RefreshBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+RefreshBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+RefreshBtn.Text = "تحديث قائمة 5 سيرفرات (< 5 لاعبين)"
+RefreshBtn.Font = Enum.Font.SourceSansBold
+RefreshBtn.TextSize = 14
+RefreshBtn.Parent = MainFrame
 
-local UICornerBtn2 = Instance.new("UICorner", ChangeServerBtn)
-UICornerBtn2.CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", RefreshBtn).CornerRadius = UDim.new(0, 6)
 
--- إخفاء/إظهار القائمة
+-- حاوية قائمة السيرفرات (Container)
+local ServerContainer = Instance.new("ScrollingFrame")
+ServerContainer.Size = UDim2.new(0.9, 0, 0, 240)
+ServerContainer.Position = UDim2.new(0.05, 0, 0.28, 0)
+ServerContainer.BackgroundTransparency = 1
+ServerContainer.BorderSizePixel = 0
+ServerContainer.ScrollBarThickness = 4
+ServerContainer.Parent = MainFrame
+
+local UIList = Instance.new("UIListLayout")
+UIList.SortOrder = Enum.SortOrder.LayoutOrder
+UIList.Padding = UDim.new(0, 6)
+UIList.Parent = ServerContainer
+
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
 
--- 3. دالة البحث عن سيرفر يحتوي على 3 أشخاص أو أقل
-local function HopToLowServer()
-    StatusLabel.Text = "الحالة: جاري البحث عن سيرفر..."
+-- 2. دالة جلب 5 سيرفرات
+local function Fetch5Servers()
+    StatusLabel.Text = "جاري جلب 5 سيرفرات..."
     StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+
+    -- مسح السيرفرات السابقة من القائمة
+    for _, child in ipairs(ServerContainer:GetChildren()) do
+        if child:IsA("Frame") then
+            child:Destroy()
+        end
+    end
 
     local currentJobId = game.JobId
     local placeId = game.PlaceId
-    local foundServer = nil
+    local foundServers = {}
 
     local apiUrl = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
     
@@ -132,31 +148,98 @@ local function HopToLowServer()
         local data = HttpService:JSONDecode(response)
         if data and data.data then
             for _, server in ipairs(data.data) do
-                if tostring(server.id) ~= tostring(currentJobId) and server.playing <= 3 and server.playing < server.maxPlayers then
-                    foundServer = server.id
-                    break
+                if tostring(server.id) ~= tostring(currentJobId) and server.playing < 5 and server.playing < server.maxPlayers then
+                    table.insert(foundServers, server)
+                    if #foundServers >= 5 then
+                        break
+                    end
                 end
             end
         end
     end
 
-    if foundServer then
-        StatusLabel.Text = "تم العثور! جاري الانتقال..."
+    if #foundServers > 0 then
+        StatusLabel.Text = "تم العثور على " .. tostring(#foundServers) .. " سيرفرات!"
         StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
-        
-        -- تجهيز التفعيل التلقائي قبل الانتقال مباشرة
-        prepareAutoExecute()
-        
-        task.wait(0.5)
-        
-        -- الانتقال للسيرفر
-        TeleportService:TeleportToPlaceInstance(placeId, foundServer, LocalPlayer)
+
+        for i, server in ipairs(foundServers) do
+            local Card = Instance.new("Frame")
+            Card.Size = UDim2.new(1, 0, 0, 42)
+            Card.BackgroundColor3 = Color3.fromRGB(35, 35, 45)
+            Card.Parent = ServerContainer
+            Instance.new("UICorner", Card).CornerRadius = UDim.new(0, 6)
+
+            local Info = Instance.new("TextLabel")
+            Info.Size = UDim2.new(0.6, 0, 1, 0)
+            Info.Position = UDim2.new(0.03, 0, 0, 0)
+            Info.BackgroundTransparency = 1
+            Info.Text = "سيرفر " .. tostring(i) .. " (" .. tostring(server.playing) .. " لاعبين)"
+            Info.TextColor3 = Color3.fromRGB(255, 255, 255)
+            Info.Font = Enum.Font.SourceSansBold
+            Info.TextSize = 13
+            Info.TextXAlignment = Enum.TextXAlignment.Left
+            Info.Parent = Card
+
+            local JoinBtn = Instance.new("TextButton")
+            JoinBtn.Size = UDim2.new(0.33, 0, 0.7, 0)
+            JoinBtn.Position = UDim2.new(0.64, 0, 0.15, 0)
+            JoinBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 80)
+            JoinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            JoinBtn.Text = "Join Server"
+            JoinBtn.Font = Enum.Font.SourceSansBold
+            JoinBtn.TextSize = 13
+            JoinBtn.Parent = Card
+            Instance.new("UICorner", JoinBtn).CornerRadius = UDim.new(0, 4)
+
+            JoinBtn.MouseButton1Click:Connect(function()
+                StatusLabel.Text = "جاري الانتقال إلى سيرفر " .. tostring(i) .. "..."
+                StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+                prepareAutoExecute()
+                task.wait(0.3)
+                TeleportService:TeleportToPlaceInstance(placeId, server.id, LocalPlayer)
+            end)
+        end
     else
-        StatusLabel.Text = "لم يتم العثور على سيرفر مناسب، حاول لاحقاً"
+        StatusLabel.Text = "لم يتم العثور على سيرفرات مناسية حالياً"
         StatusLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
     end
 end
 
-ChangeServerBtn.MouseButton1Click:Connect(function()
-    HopToLowServer()
-end)
+-- 3. دالة فحص البيض النادر تلقائياً فور الدخول
+local function AutoScanEggOnJoin()
+    task.wait(2)
+    local foundEgg = nil
+    
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("StringValue") or obj:IsA("Model") or obj:IsA("MeshPart") then
+            local name = string.lower(obj.Name)
+            local text = obj:IsA("TextLabel") and string.lower(obj.Text) or ""
+            
+            if string.find(name, "secret") or string.find(text, "secret") or
+               string.find(name, "divine") or string.find(text, "divine") or
+               string.find(name, "eternal") or string.find(text, "eternal") then
+                foundEgg = obj.Name
+                break
+            end
+        end
+    end
+    
+    if foundEgg then
+        StatusLabel.Text = "🎉 تم العثور على بيضة نادرة! (" .. tostring(foundEgg) .. ")"
+        StatusLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
+        
+        local sound = Instance.new("Sound", Workspace)
+        sound.SoundId = "rbxassetid://4590662766"
+        sound.Volume = 2
+        sound:Play()
+    else
+        StatusLabel.Text = "لا توجد بيضة نادرة في هذا السيرفر حالياً"
+        StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    end
+end
+
+RefreshBtn.MouseButton1Click:Connect(Fetch5Servers)
+
+-- تشغيل الجلب والفحص فور تشغيل السكربت
+Fetch5Servers()
+task.spawn(AutoScanEggOnJoin)
