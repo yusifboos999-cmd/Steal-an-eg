@@ -8,32 +8,37 @@ local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
--- 1. إعداد التفعيل التلقائي عند الانتقال لسيرفر جديد
-local queue_on_teleport = queue_on_teleport or (syn and syn.queue_on_teleport) or queueonteleport
+-- رابط السكربت الخاص بك
+local RAW_SCRIPT_URL = "https://raw.githubusercontent.com/yusifboos999-cmd/Steal-an-eg/refs/heads/main/main.lua" 
 
--- [ملاحظة]: إذا كان لديك رابط GitHub Raw للسكربت، ضع الرابط داخل التنصيص أسفله لضمان التشغيل 100%
-local RAW_SCRIPT_URL = "" 
+-- التعرف على كافة دوال queue_on_teleport للمحققات المختلفة
+local queuer = queue_on_teleport or (syn and syn.queue_on_teleport) or queueonteleport or (fluxus and fluxus.queue_on_teleport) or (getgenv and getgenv().queue_on_teleport)
 
-local function setAutoExecute()
-    if queue_on_teleport then
-        if RAW_SCRIPT_URL ~= "" then
-            queue_on_teleport("task.wait(2); loadstring(game:HttpGet('" .. RAW_SCRIPT_URL .. "'))()")
-        else
-            -- في حال عدم وجود رابط، سيتم حفظ هذا الكود لإعادة تشغيله
-            queue_on_teleport([[
-                task.wait(2)
-                -- إعادة تشغيل السكربت تلقائياً
-            ]])
-        end
+-- دالة تجهيز السكربت للعمل بالسيرفر القادم بعد اكتمال التحميل
+local function prepareAutoExecute()
+    if queuer then
+        pcall(function()
+            queuer([=[
+                repeat task.wait() until game:IsLoaded()
+                task.wait(1.5)
+                loadstring(game:HttpGet("https://raw.githubusercontent.com/yusifboos999-cmd/Steal-an-eg/refs/heads/main/main.lua"))()
+            ]=])
+        end)
     end
 end
 
--- 2. إنتاج واجهة المستخدم (GUI)
+-- ربط التجهيز بحدث الانتقال التلقائي للعبة لضمان عدم ضياع الأمر
+pcall(function()
+    LocalPlayer.OnTeleport:Connect(function(State)
+        prepareAutoExecute()
+    end)
+end)
+
+-- 2. إنشاء واجهة المستخدم (GUI)
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "StealAnEgg_ServerHopper"
 ScreenGui.ResetOnSpawn = false
 
--- التأكد من إضافتها للـ CoreGui إن أمكن أو PlayerGui
 if syn and syn.protect_gui then
     syn.protect_gui(ScreenGui)
     ScreenGui.Parent = CoreGui
@@ -62,7 +67,7 @@ MainFrame.Position = UDim2.new(0.5, -140, 0.5, -90)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
-MainFrame.Draggable = true -- سحب القائمة باللمس
+MainFrame.Draggable = true
 MainFrame.Parent = ScreenGui
 
 local UICornerMain = Instance.new("UICorner", MainFrame)
@@ -103,7 +108,7 @@ ChangeServerBtn.Parent = MainFrame
 local UICornerBtn2 = Instance.new("UICorner", ChangeServerBtn)
 UICornerBtn2.CornerRadius = UDim.new(0, 8)
 
--- إخفاء/إظهار القائمة عند الضغط على زر Menu
+-- إخفاء/إظهار القائمة
 ToggleBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = not MainFrame.Visible
 end)
@@ -117,7 +122,6 @@ local function HopToLowServer()
     local placeId = game.PlaceId
     local foundServer = nil
 
-    -- جلب قائمة السيرفرات العامة مرتبة تصاعدياً حسب عدد اللاعبين
     local apiUrl = "https://games.roblox.com/v1/games/" .. placeId .. "/servers/Public?sortOrder=Asc&limit=100"
     
     local success, response = pcall(function()
@@ -128,10 +132,6 @@ local function HopToLowServer()
         local data = HttpService:JSONDecode(response)
         if data and data.data then
             for _, server in ipairs(data.data) do
-                -- الشروط:
-                -- 1. ليس السيرفر الحالي (v.id ~= game.JobId)
-                -- 2. عدد اللاعبين 3 أو أقل (v.playing <= 3)
-                -- 3. السيرفر ليس ممتلئاً أو متوقفاً
                 if tostring(server.id) ~= tostring(currentJobId) and server.playing <= 3 and server.playing < server.maxPlayers then
                     foundServer = server.id
                     break
@@ -141,13 +141,15 @@ local function HopToLowServer()
     end
 
     if foundServer then
-        StatusLabel.Text = "تم العثور على سيرفر! جاري الانتقال..."
+        StatusLabel.Text = "تم العثور! جاري الانتقال..."
         StatusLabel.TextColor3 = Color3.fromRGB(100, 255, 100)
         
-        -- حفظ السكربت ليعمل تلقائياً بالسيرفر الجديد
-        setAutoExecute()
+        -- تجهيز التفعيل التلقائي قبل الانتقال مباشرة
+        prepareAutoExecute()
         
-        -- الانتقال إلى السيرفر الجديد
+        task.wait(0.5)
+        
+        -- الانتقال للسيرفر
         TeleportService:TeleportToPlaceInstance(placeId, foundServer, LocalPlayer)
     else
         StatusLabel.Text = "لم يتم العثور على سيرفر مناسب، حاول لاحقاً"
@@ -155,7 +157,6 @@ local function HopToLowServer()
     end
 end
 
--- ربط الزر بالدالة
 ChangeServerBtn.MouseButton1Click:Connect(function()
     HopToLowServer()
 end)
